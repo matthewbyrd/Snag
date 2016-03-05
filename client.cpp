@@ -65,7 +65,6 @@ int main (int argc, char *argv[])
     memset(buffer, 0, 256);
     fgets(buffer, 255, stdin);
 		
-		std::cout << "waiting for message" << std::endl;
     int writeLen = write(clientSocket, buffer, strlen(buffer));
     if (writeLen < 0) 
     {

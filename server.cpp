@@ -48,15 +48,9 @@ static bool takenThreads[maxConnectionsAllowed];
 //TODO
 /*
 
-[√] MUST MUTEX LOCK THE CLIENT VECTOR DURING OPERATIONS!
-
 [ ] OOP because Bjarne
 
-[√] deal with thread list -- maybe track free thread IDs?
-
 [ ] use getline instead of fgets...
-
-[√] sort out the passing of messages -- currently superfluously vectors?
 
 [ ] keep track of list of snaggables (and ping them, broadcast their status)
 
@@ -164,29 +158,29 @@ int outputErrorAndQuit(std::string errorMessage)
 
 Socket setupAndListen(int port)
 {
-    Socket welcomingSocket = socket(IPV4, TCP, defaultProtocol);
-    if (welcomingSocket < 0) 
-   {
-       std::cerr << "ERROR opening welcoming-socket" << std::endl;
-     return -1;
-   }
+  Socket welcomingSocket = socket(IPV4, TCP, defaultProtocol);
+  if (welcomingSocket < 0) 
+  {
+    std::cerr << "ERROR opening welcoming-socket" << std::endl;
+    return -1;
+  }
  
   SocketAddress serverAddress;
-   memset((char *)&serverAddress, 0, sizeof(serverAddress));
-    int portNumber = port;
-    serverAddress.sin_family = IPV4;
-    serverAddress.sin_addr.s_addr = INADDR_ANY;
-    serverAddress.sin_port = htons(portNumber);
-    if (bind(welcomingSocket, (struct sockaddr *) &serverAddress, sizeof(serverAddress)) < 0) 
-   {
-        std::cerr << "ERROR : failed to bind welcoming-socket" << std::endl;
+  memset((char *)&serverAddress, 0, sizeof(serverAddress));
+  int portNumber = port;
+  serverAddress.sin_family = IPV4;
+  serverAddress.sin_addr.s_addr = INADDR_ANY;
+  serverAddress.sin_port = htons(portNumber);
+  if (bind(welcomingSocket, (struct sockaddr *) &serverAddress, sizeof(serverAddress)) < 0) 
+  {
+    std::cerr << "ERROR : failed to bind welcoming-socket" << std::endl;
     return -1;
-    }
+  }
  
-    listen(welcomingSocket, maxPendingConnections);
-   std::cout << "Listening on port "<< portNumber << ". . . " << std::endl;
+  listen(welcomingSocket, maxPendingConnections);
+  std::cout << "Listening on port "<< portNumber << ". . . " << std::endl;
  
-   return welcomingSocket;
+  return welcomingSocket;
 }
 
 /* void pointer mlarkey is due to calling with pthread_create */
@@ -194,17 +188,19 @@ void* mainClientLoop(void* clientptr)
 {
   Client& client = *( (Client*) clientptr);
   uint8_t buffer[readSize];
-  
-  std::cout << "speaking to client on socket: " << client.socket
-    << " with thread id: " << client.threadID << std::endl;
+	memset(buffer, 0, readSize);
+
+	message(client, "Welcome to snag! Here is some helpful information:\n\nPlease enter your name:"); // TODO
+	int readLen = read(client.socket, buffer, readSize);
+	std::string name(buffer, buffer + readLen - 1); // -1 to remove newline
+	client.name = name;
+	std::cout << client.name << " connected." << std::endl;
   
   while (1)
   {
     memset(buffer, 0, readSize);
     
-    std::cout << "waiting for message" << std::endl;
     int readLen = read(client.socket, buffer, readSize);
-    std::cout << "Read something of size: " << readLen << std::endl;
     
     if (readLen <= 0)
     {
@@ -218,7 +214,6 @@ void* mainClientLoop(void* clientptr)
       pthread_mutex_unlock(&threadListMutex);
       pthread_exit(NULL);
     }
-    
     
     std::cout << "Client wrote a message: " << buffer << std::endl;
     broadcastToAllExcept(buffer, readLen, client);
@@ -257,13 +252,6 @@ int main (int argc, char *argv[])
       continue;
     }
     pthread_mutex_unlock(&clientListMutex);
-   
-    // TODO: set up client name
-    bool sentInitialMessage = message(newClient, "Welcome to snag, client. Here is some helpful information:\n");
-    if (!sentInitialMessage) 
-    {
-      std::cerr << "ERROR: Failed to send initial message";
-    }
     
     // set up client thread
     pthread_mutex_lock(&threadListMutex);
