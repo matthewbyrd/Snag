@@ -4,6 +4,7 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <pthread.h>
+#include <string.h>
 
 // C++ libraries
 #include <iostream>
@@ -112,7 +113,7 @@ void forgetClient(Client& client)
 
 bool message(Client& client, uint8_t* data, size_t dataLen)
 {
-  int writeLen = write(client.socket, data, dataLen);
+  uint16_t writeLen = write(client.socket, data, dataLen);
   
   if (writeLen < dataLen)
   {
@@ -123,7 +124,7 @@ bool message(Client& client, uint8_t* data, size_t dataLen)
 
 bool message(Client& client, std::string text)
 {
-  int writeLen = write(client.socket, &text[0], text.size());
+  uint16_t writeLen = write(client.socket, &text[0], text.size());
   
   if (writeLen < text.size())
   {
