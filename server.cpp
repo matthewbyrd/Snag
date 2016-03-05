@@ -14,12 +14,13 @@
 #define IPV4 AF_INET
 #define TCP SOCK_STREAM
 const uint8_t defaultProtocol = 0;
-const uint8_t maxPendingConnections = 5;
-const uint8_t readSize = 255;
-const uint8_t maxNumThreads = 10;
 typedef int Socket;
 typedef struct sockaddr_in SocketAddress;
 
+// Constants
+const uint8_t maxPendingConnections = 5;
+const uint8_t readSize = 255;
+const uint8_t maxNumThreads = 10;
 const uint8_t maxConnectionsAllowed = 10;
 
 pthread_mutex_t clientListMutex = PTHREAD_MUTEX_INITIALIZER;
@@ -48,9 +49,18 @@ static bool takenThreads[maxConnectionsAllowed];
 //TODO
 /*
 
+Commands: 
+add <server>
+remove <server>
+snag <server>
+unsnag <server>
+list
+
 [ ] OOP because Bjarne
 
-[ ] use getline instead of fgets...
+[ ] client: use getline instead of fgets...
+
+[ ] client: separate listening and writing threads
 
 [ ] keep track of list of snaggables (and ping them, broadcast their status)
 
@@ -195,6 +205,7 @@ void* mainClientLoop(void* clientptr)
 	std::string name(buffer, buffer + readLen - 1); // -1 to remove newline
 	client.name = name;
 	std::cout << client.name << " connected." << std::endl;
+	message(client, "Welcome " + client.name);
   
   while (1)
   {
