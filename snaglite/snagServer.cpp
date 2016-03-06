@@ -356,7 +356,13 @@ std::string secondsToTime(double totalSecondsDouble)
 	uint64_t totalSeconds = totalSecondsDouble;
 	int seconds = totalSeconds % 60; 
 	int minutes = (totalSeconds / 60) % 60; 
-	int hours = totalSeconds / 60 / 60;
+	int hours = (totalSeconds / 60 / 60) % 24;
+	int days = totalSeconds / 60 / 60 / 24;
+	if (days)
+	{
+		oss << days;
+		oss << "d ";
+	}
 	if (hours)
 	{
 	  oss << hours;
