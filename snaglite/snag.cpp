@@ -42,8 +42,7 @@ int main(int argc, char* argv[])
 		
 	char clientName[20];
 	getlogin_r(clientName, 20);
-	
-	int writeLen;
+
 	if ( strcmp(argv[1], "-l") == 0 )
 	{
 		write(clientSocket, "l-", 2);
@@ -129,7 +128,7 @@ Socket connectToServer()
     return -1;
   }
   
-  Host* server = gethostbyname("localhost");
+  Host* server = gethostbyname("Matthews-Air.home");
   if (server == NULL)
   {
     std::cerr << "ERROR, no such host " << std::endl;
