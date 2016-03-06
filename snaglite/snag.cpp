@@ -8,6 +8,7 @@
 #include <netdb.h>
 
 #include <iostream>
+#include <sstream>
 
 // Make the C socket stuff more pleasant
 #define IPV4 AF_INET
@@ -18,6 +19,7 @@ typedef struct sockaddr_in SocketAddress;
 typedef struct hostent Host;  
 
 int connectToServer();
+void parseSnagList(char* buffer, size_t len);
 
 int main(int argc, char* argv[])
 {
@@ -47,6 +49,20 @@ int main(int argc, char* argv[])
 	if ( strcmp(argv[1], "-l") == 0 )
 	{
 		write(clientSocket, "l-", 2);
+		std::cout << "    MACHINE NAME          SNAGGER          SNAGGED FOR" << std::endl;
+		std::cout << "------------------------------------------------------------------" << std::endl;
+		
+		// get server reply
+		char buffer[601];
+		memset(buffer, 0, 601);
+		int readLen = read(clientSocket, buffer, 600);
+		if (readLen < 0)
+		{
+		  std::cerr << "ERROR reading from socket" << std::endl;
+		  return 1;
+		}
+		parseSnagList(buffer, readLen);
+		return 0; 
 	}	
 	else if ( strcmp(argv[1], "-a") == 0)
 	{
@@ -121,7 +137,7 @@ int main(int argc, char* argv[])
 
 Socket connectToServer()
 {
-  int portNumber = atoi("6647");
+  int portNumber = atoi("6643");
   int clientSocket = socket(IPV4, SOCK_STREAM, defaultProtocol);
   if (clientSocket < 0) 
   {
@@ -129,7 +145,7 @@ Socket connectToServer()
     return -1;
   }
   
-  Host* server = gethostbyname("localhost");
+  Host* server = gethostbyname("Matthews-Air.home");
   if (server == NULL)
   {
     std::cerr << "ERROR, no such host " << std::endl;
@@ -147,4 +163,56 @@ Socket connectToServer()
     return -1;
   }
 	return clientSocket;
+}
+
+void parseSnagList(char* buffer, size_t len)
+{
+	std::ostringstream oss;
+	for (size_t i = 0; i < len;)
+	{
+		oss << "    ";
+	  ++i;
+		// extract snaggable name
+		int nameLength = 0;
+		while (buffer[i] != '#')
+		{
+			oss << buffer[i++];
+			++nameLength;
+		}
+		int spaces = 22 - nameLength;
+		for (; spaces; --spaces) oss << " ";
+		
+		++i;
+		//check if snagged
+		if (!(buffer[i] == '0'))
+		{
+			// extract snagger info
+			// snagger name
+			++i;
+			++i;
+			nameLength = 0;
+			while(buffer[i] != '#')
+			{
+				oss << buffer[i++];
+				++nameLength;
+			}
+			int spaces = 17 - nameLength;
+			for (; spaces; --spaces) oss << " ";
+			
+			// snagged time
+			++i;
+			while(buffer[i] != '#')
+			{
+				oss << buffer[i++];
+			}
+			++i;
+		}
+		else
+		{
+			++i;++i;
+		}
+		oss << "\n";
+	}
+	std::string output = oss.str();
+	std::cout << output << std::endl;
 }

@@ -214,13 +214,26 @@ int main (int argc, char *argv[])
 		{
 			time_t now = time(NULL);
 			std::sort(snaggables.begin(), snaggables.end());
-			std::string reply = "    MACHINE NAME          SNAGGER          SNAGGED FOR\n";
-			           reply += "------------------------------------------------------------------\n";
+			std::ostringstream oss;
 			for (auto machine : snaggables)
-			{
+      {
+				oss << "#";            // <--- TODO: implement some basic protocol for sending this rather than relying on #
+				oss << machine.m_name;
+				oss << "#";
+				oss << machine.m_snagged;
+				oss << "#";
+				if (machine.m_snagged)
+				{
+				  oss << machine.m_snagger;
+					oss << "#";
+					double seconds = difftime(now, machine.m_snaggedTime);
+				  oss << secondsToTime(seconds);
+					oss << "#";
+			  }
+				/*
 				reply += "    ";
 				reply += machine.m_name;
-				int spaces = 22 - machine.m_name.size();  // < --- TODO watch overflow	
+				int spaces = 22 - machine.m_name.size();  // < --- TODO watch underflow though we do already limit name len...
 				for (; spaces; --spaces)
 				{
 					reply += " ";
@@ -229,7 +242,7 @@ int main (int argc, char *argv[])
 				{
 					reply += machine.m_snagger;
 				}
-				spaces = 17 - machine.m_snagger.size();  // < --- TODO watch overflow	
+				spaces = 17 - machine.m_snagger.size();  // < --- TODO watch underflow though we do already limit name len...
 				for (; spaces; --spaces)
 				{
 					reply += " ";
@@ -238,10 +251,9 @@ int main (int argc, char *argv[])
 				{
 					double seconds = difftime(now, machine.m_snaggedTime);
 					reply += secondsToTime(seconds);
-				}
-				reply += "\n";
-			}
-			message(client, reply);
+				*/
+      }
+			message(client, oss.str());
 		}
 		else if (buffer[0] == 's')
 		{
