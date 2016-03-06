@@ -5,6 +5,7 @@
 #include <netinet/in.h>
 #include <pthread.h>
 #include <time.h>
+#include <string.h>
 
 // C++ libraries
 #include <iostream>
@@ -362,7 +363,7 @@ int main (int argc, char *argv[])
 
 bool message(Socket client, uint8_t* data, size_t dataLen)
 {
-  int writeLen = write(client, data, dataLen);
+  uint32_t writeLen = write(client, data, dataLen);
   
   if (writeLen < dataLen)
   {
@@ -373,7 +374,7 @@ bool message(Socket client, uint8_t* data, size_t dataLen)
 
 bool message(Socket client, std::string text)
 {
-  int writeLen = write(client, &text[0], text.size());
+  uint32_t writeLen = write(client, &text[0], text.size());
   
   if (writeLen < text.size())
   {
