@@ -71,6 +71,10 @@ int main(int argc, char* argv[])
 			std::cout << "ERROR: you didn't specify a server to add!" << std::endl;
 			return 1;
 		}
+		if (strlen(argv[2]) > 22)
+		{
+			std::cout << "ERROR: name too long" << std::endl;
+		}
 		std::ostringstream oss;
 		oss << "a-" << argv[2] << "-" << clientName << "-";
 		std::string message = oss.str();
