@@ -165,6 +165,11 @@ int main (int argc, char *argv[])
 				message(client, "Machine name too long");
 				continue;
 			}
+			else if (requestedMachine.find('#') != std::string::npos)
+			{
+				message(client, "Machine name must not include '#' because my creator sucks");
+				continue;
+			}
 			for (auto & c: requestedMachine) c = toupper(c);
 			bool machineExists = false;
 			for (Machine& machine : snaggables)
@@ -231,28 +236,6 @@ int main (int argc, char *argv[])
 				  oss << secondsToTime(seconds);
 					oss << "#";
 			  }
-				/*
-				reply += "    ";
-				reply += machine.m_name;
-				int spaces = 22 - machine.m_name.size();  // < --- TODO watch underflow though we do already limit name len...
-				for (; spaces; --spaces)
-				{
-					reply += " ";
-				}
-				if (machine.m_snagged)
-				{
-					reply += machine.m_snagger;
-				}
-				spaces = 17 - machine.m_snagger.size();  // < --- TODO watch underflow though we do already limit name len...
-				for (; spaces; --spaces)
-				{
-					reply += " ";
-				}
-				if (machine.m_snagged)
-				{
-					double seconds = difftime(now, machine.m_snaggedTime);
-					reply += secondsToTime(seconds);
-				*/
       }
 			message(client, oss.str());
 		}

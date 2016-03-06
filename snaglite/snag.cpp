@@ -48,13 +48,14 @@ int main(int argc, char* argv[])
 	if ( strcmp(argv[1], "-l") == 0 )
 	{
 		write(clientSocket, "l-", 2);
+		std::cout << std::endl;
 		std::cout << "    MACHINE NAME          SNAGGER          SNAGGED FOR" << std::endl;
 		std::cout << "------------------------------------------------------------------" << std::endl;
 		
 		// get server reply
 		char buffer[601];
 		memset(buffer, 0, 601);
-		int readLen = read(clientSocket, buffer, 600);
+		int readLen = read(clientSocket, buffer, 400);
 		if (readLen < 0)
 		{
 		  std::cerr << "ERROR reading from socket" << std::endl;
@@ -136,7 +137,7 @@ int main(int argc, char* argv[])
 
 Socket connectToServer()
 {
-  int portNumber = atoi("6643");
+  int portNumber = atoi("6642");
   int clientSocket = socket(IPV4, SOCK_STREAM, defaultProtocol);
   if (clientSocket < 0) 
   {
