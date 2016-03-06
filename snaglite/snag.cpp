@@ -25,16 +25,32 @@ int main(int argc, char* argv[])
 {
   if (argc < 2) 
   {
-    std::cout << "USAGE: " << argv[0] << " [-l / -u / -a / -d][snaggable]" << std::endl;
+    std::cout << "USAGE: " << argv[0] << " [-l/-u/-a/-d/-h][snaggable]" << std::endl;
+		std::cout << "Type " << argv[0] << " -h for help" << std::endl;
+    return 1;
+  }
+	
+	if ( argv[1][0] == '-' && 
+		   argv[1][1] != 'l' &&
+			 argv[1][1] != 'u' && 
+			 argv[1][1] != 'a' &&
+			 argv[1][1] != 'd' &&
+			 argv[1][1] != 'h')
+	{
+		std::cout << "ERROR: command not recognised" << std::endl;
+		return 1;
+	}
+	
+	if ( strcmp(argv[1], "-h") == 0)
+	{
 		std::cout << "Examples:" << std::endl;
 		std::cout << argv[0] << " -l            <-- list the servers" << std::endl;
 		std::cout << argv[0] << " myserver      <-- attempt to snag myserver" << std::endl;
 		std::cout << argv[0] << " -u myserver   <-- attempt to unsnag myserver" << std::endl;
 		std::cout << argv[0] << " -a myserver   <-- attempt to add myserver" << std::endl;
 		std::cout << argv[0] << " -d myserver   <-- attempt to delete myserver" << std::endl;
-		
-    return 1;
-  }
+		return 1;
+	}
 
 	Socket clientSocket = connectToServer();
 	if (clientSocket == -1)
