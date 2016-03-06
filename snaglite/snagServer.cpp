@@ -354,10 +354,9 @@ std::string secondsToTime(double totalSecondsDouble)
 {
 	std::ostringstream oss;
 	uint64_t totalSeconds = totalSecondsDouble;
-	int seconds, hours, minutes;
-	minutes = totalSeconds / 60;
-	hours = minutes / 60;
-	seconds = (int)(totalSeconds % 60);
+	int seconds = totalSeconds % 60; 
+	int minutes = (totalSeconds / 60) % 60; 
+	int hours = totalSeconds / 60 / 60;
 	if (hours)
 	{
 	  oss << hours;
@@ -370,9 +369,8 @@ std::string secondsToTime(double totalSecondsDouble)
 	}
 	oss << seconds;
 	oss << "s ";
-	std::string display;
-	display += oss.str();
-	return display;
+
+	return oss.str();
 }
 
 // TODO: make these two functions not suck -- use regex? 

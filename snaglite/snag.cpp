@@ -126,7 +126,7 @@ int main(int argc, char* argv[])
 
 Socket connectToServer()
 {
-  int portNumber = atoi("6641");
+  int portNumber = atoi("6640");
   int clientSocket = socket(IPV4, SOCK_STREAM, defaultProtocol);
   if (clientSocket < 0) 
   {
