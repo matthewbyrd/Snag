@@ -25,7 +25,7 @@ int main(int argc, char* argv[])
 {
   if (argc < 2) 
   {
-    std::cout << "USAGE: " << argv[0] << " [-l / -u][snaggable]" << std::endl;
+    std::cout << "USAGE: " << argv[0] << " [-l / -u / -a / -d][snaggable]" << std::endl;
 		std::cout << "Examples:" << std::endl;
 		std::cout << argv[0] << " -l            <-- list the servers" << std::endl;
 		std::cout << argv[0] << " myserver      <-- attempt to snag myserver" << std::endl;
@@ -154,6 +154,7 @@ Socket connectToServer()
 	return clientSocket;
 }
 
+// TODO: make this not suck
 void parseSnagList(char* buffer, size_t len)
 {
 	std::ostringstream oss;

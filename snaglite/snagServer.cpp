@@ -24,11 +24,15 @@ typedef struct sockaddr_in SocketAddress;
 const uint8_t maxPendingConnections = 5;
 const uint8_t readSize = 255;
 
+// prototypes
 bool message(Socket client, uint8_t* data, size_t dataLen);
 bool message(Socket client, std::string text);
 Socket setupAndListen(int port);
 Socket getClientSocket(Socket welcomingSocket);
 int outputErrorAndQuit(const char* errorMessage);
+std::string secondsToTime(double totalSecondsDouble);
+std::string extractMachineName(uint8_t* message, int messageLen);
+std::string extractUserName(uint8_t* message, int messageLen);
 
 struct Machine;
 std::vector<Machine> snaggables;
@@ -71,9 +75,7 @@ bool operator<(Machine const & a, Machine const & b)
     return a.m_name < b.m_name;
 }
 
-std::string secondsToTime(double totalSecondsDouble);
-std::string extractMachineName(uint8_t* message, int messageLen);
-std::string extractUserName(uint8_t* message, int messageLen);
+//----------------------------------------------------------------------------
 
 
 int main (int argc, char *argv[])
@@ -209,31 +211,25 @@ int main (int argc, char *argv[])
 						machine.m_snagged = true;
 						machine.m_snagger = user;
 						machine.m_snaggedTime = time(NULL);
-						std::string reply;   //< ----------- TODO: use stream
-						reply += "Machine ";
-						reply += machine.m_name;
-						reply += " successfully snagged.";
-						message(client, reply);
+						std::ostringstream reply;
+						reply << "Machine " << machine.m_name << " successfully snagged.";
+						message(client, reply.str());
 						machineExists = true;
 						break;
 					}
 					else if (machine.m_snagged && machine.m_snagger == user)
 					{
-						std::string reply;   //< ----------- TODO: use stream
-						reply += "Machine ";
-						reply += machine.m_name;
-						reply += " is already snagged by you, silly!";
-						message(client, reply);
+						std::ostringstream reply;
+						reply << "Machine " << machine.m_name << " is already snagged by you, silly!";
+						message(client, reply.str());
 						machineExists = true;
 						break;
 					}
 					else
 					{
-						std::string reply;   //< ----------- TODO: use stream
-						reply += "Machine ";
-						reply += machine.m_name;
-						reply += " is already snagged.";
-						message(client, reply);
+						std::ostringstream reply;
+						reply << "Machine " << machine.m_name << " is already snagged by ." << machine.m_snagger;
+						message(client, reply.str());
 						machineExists = true;
 						break;
 					}
@@ -241,11 +237,9 @@ int main (int argc, char *argv[])
 			}
 			if (!machineExists)
 			{
-				std::string reply;   //< ----------- TODO: use stream
-				reply += "Machine ";
-				reply += requestedMachine;
-				reply += " does not exist.";
-				message(client, reply);
+				std::ostringstream reply;
+				reply << "Machine " << requestedMachine << " does not exist.";
+				message(client, reply.str());
 			}
 		}
 		else if (buffer [0] == 'u')
@@ -263,31 +257,25 @@ int main (int argc, char *argv[])
 					{
 						machine.m_snagged = false;
 						machine.m_snagger = "";
-						std::string reply;   //< ----------- TODO: use stream
-						reply += "Machine ";
-						reply += machine.m_name;
-						reply += " successfully unsnagged.";
-						message(client, reply);
+						std::ostringstream reply;
+						reply << "Machine " << machine.m_name << " successfully unsnagged.";
+						message(client, reply.str());
 						break;
 					}
 					else
 					{
-						std::string reply;   //< ----------- TODO: use stream
-						reply += "Machine ";
-						reply += machine.m_name;
-						reply += " is not snagged by you.";
-						message(client, reply);
+						std::ostringstream reply;
+						reply << "Machine " << machine.m_name << " is not snagged by you.";
+						message(client, reply.str());
 						break;
 					}
 				}
 			}
 			if (!machineExists)
 			{
-				std::string reply;   //< ----------- TODO: use stream
-				reply += "Machine ";
-				reply += requestedMachine;
-				reply += " does not exist.";
-				message(client, reply);
+				std::ostringstream reply;
+				reply << "Machine " << requestedMachine << " does not exist.";
+				message(client, reply.str());
 		  }
 		}
 		
@@ -387,6 +375,7 @@ std::string secondsToTime(double totalSecondsDouble)
 	return display;
 }
 
+// TODO: make these two functions not suck -- use regex? 
 std::string extractMachineName(uint8_t* message, int messageLen)
 {
 	std::string machine;
