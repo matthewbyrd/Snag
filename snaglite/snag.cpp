@@ -74,6 +74,7 @@ int main(int argc, char* argv[])
 		if (strlen(argv[2]) > 22)
 		{
 			std::cout << "ERROR: name too long" << std::endl;
+			return 1;
 		}
 		std::ostringstream oss;
 		oss << "a-" << argv[2] << "-" << clientName << "-";
