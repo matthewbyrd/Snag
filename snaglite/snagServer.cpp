@@ -63,64 +63,18 @@ struct Machine
   }
 };
 
+uint8_t Machine::id = 0;
+
 // for sort
 bool operator<(Machine const & a, Machine const & b)
 {
     return a.m_name < b.m_name;
 }
 
-std::string secondsToTime(double totalSecondsDouble)
-{
-	std::ostringstream oss;
-	uint64_t totalSeconds = totalSecondsDouble;
-	int seconds, hours, minutes;
-	minutes = totalSeconds / 60;
-	hours = minutes / 60;
-	seconds = (int)(totalSeconds % 60);
-	if (hours)
-	{
-	  oss << hours;
-	  oss << "h ";
-  }
-	if (minutes)
-	{
-	  oss << minutes;
-	  oss << "m ";
-	}
-	oss << seconds;
-	oss << "s ";
-	std::string display;
-	display += oss.str();
-	return display;
-}
+std::string secondsToTime(double totalSecondsDouble);
+std::string extractMachineName(uint8_t* message, int messageLen);
+std::string extractUserName(uint8_t* message, int messageLen);
 
-uint8_t Machine::id = 0;
-
-std::string extractMachineName(uint8_t* message, int messageLen)
-{
-	std::string machine;
-	for (int i = 2; message[i] != '-' && i < messageLen; ++i)
-	{
-		machine += message[i];
-	}
-	return machine;
-}
-
-std::string extractUserName(uint8_t* message, int messageLen)
-{
-	std::string user;
-	// skip the machine name
-	int i = 2; 
-	for (; message[i] != '-' && i < messageLen; ++i){}
-	++i;
-	
-	// get name
-	for (; message[i] != '-' && i < messageLen; ++i)
-	{
-		user += message[i];
-	}
-	return user;
-}
 
 int main (int argc, char *argv[])
 {
@@ -241,7 +195,7 @@ int main (int argc, char *argv[])
 		}
 		else if (buffer[0] == 's')
 		{
-			std::string requestedMachine = extractMachineName(buffer, readLen);  // <---------- TODO: compare as capitals
+			std::string requestedMachine = extractMachineName(buffer, readLen);
 			for (auto & c: requestedMachine) c = toupper(c);
 			//int requestedMachineAsInt = atoi(requestedMachine.c_str());
 			std::string user = extractUserName(buffer, readLen);
@@ -406,4 +360,55 @@ int outputErrorAndQuit(const char* errorMessage)
 {
   std::cerr << errorMessage << std::endl;
   return 1;
+}
+
+std::string secondsToTime(double totalSecondsDouble)
+{
+	std::ostringstream oss;
+	uint64_t totalSeconds = totalSecondsDouble;
+	int seconds, hours, minutes;
+	minutes = totalSeconds / 60;
+	hours = minutes / 60;
+	seconds = (int)(totalSeconds % 60);
+	if (hours)
+	{
+	  oss << hours;
+	  oss << "h ";
+  }
+	if (minutes)
+	{
+	  oss << minutes;
+	  oss << "m ";
+	}
+	oss << seconds;
+	oss << "s ";
+	std::string display;
+	display += oss.str();
+	return display;
+}
+
+std::string extractMachineName(uint8_t* message, int messageLen)
+{
+	std::string machine;
+	for (int i = 2; message[i] != '-' && i < messageLen; ++i)
+	{
+		machine += message[i];
+	}
+	return machine;
+}
+
+std::string extractUserName(uint8_t* message, int messageLen)
+{
+	std::string user;
+	// skip the machine name
+	int i = 2; 
+	for (; message[i] != '-' && i < messageLen; ++i){}
+	++i;
+	
+	// get name
+	for (; message[i] != '-' && i < messageLen; ++i)
+	{
+		user += message[i];
+	}
+	return user;
 }

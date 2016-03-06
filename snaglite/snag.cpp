@@ -50,7 +50,7 @@ int main(int argc, char* argv[])
 		write(clientSocket, "l-", 2);
 		std::cout << std::endl;
 		std::cout << "    MACHINE NAME          SNAGGER          SNAGGED FOR" << std::endl;
-		std::cout << "------------------------------------------------------------------" << std::endl;
+		std::cout << "----------------------------------------------------------" << std::endl;
 		
 		// get server reply
 		char buffer[601];
@@ -71,12 +71,9 @@ int main(int argc, char* argv[])
 			std::cout << "ERROR: you didn't specify a server to add!" << std::endl;
 			return 1;
 		}
-		
-		std::string message = "a-";
-		message += argv[2];
-		message += "-";
-		message += clientName;
-		message += "-";
+		std::ostringstream oss;
+		oss << "a-" << argv[2] << "-" << clientName << "-";
+		std::string message = oss.str();
 		write(clientSocket, message.c_str(), message.size());
 	}
 	else if ( strcmp(argv[1], "-d") == 0)
@@ -86,12 +83,9 @@ int main(int argc, char* argv[])
 			std::cout << "ERROR: you didn't specify a server to delete!" << std::endl;
 			return 1;
 		}
-		
-		std::string message = "d-";
-		message += argv[2];
-		message += "-";
-		message += clientName;
-		message += "-";
+		std::ostringstream oss;
+		oss << "d-" << argv[2] << "-" << clientName << "-";
+		std::string message = oss.str();
 		write(clientSocket, message.c_str(), message.size());
 	}
 	else if ( strcmp(argv[1], "-u") == 0 )
@@ -101,21 +95,16 @@ int main(int argc, char* argv[])
 			std::cout << "ERROR: you didn't specify a server to unsnag!" << std::endl;
 			return 1;
 		}
-		
-		std::string message = "u-";
-		message += argv[2];
-		message += "-";
-		message += clientName;
-		message += "-";
+		std::ostringstream oss;
+		oss << "u-" << argv[2] << "-" << clientName << "-";
+		std::string message = oss.str();
 		write(clientSocket, message.c_str(), message.size());
 	}
 	else
 	{
-		std::string message = "s-";
-		message += argv[1];
-		message += "-";
-		message += clientName;
-		message += "-";
+		std::ostringstream oss;
+		oss << "s-" << argv[1] << "-" << clientName << "-";
+		std::string message = oss.str();
 		write(clientSocket, message.c_str(), message.size());
 	}
 	
@@ -137,7 +126,7 @@ int main(int argc, char* argv[])
 
 Socket connectToServer()
 {
-  int portNumber = atoi("6642");
+  int portNumber = atoi("6641");
   int clientSocket = socket(IPV4, SOCK_STREAM, defaultProtocol);
   if (clientSocket < 0) 
   {
