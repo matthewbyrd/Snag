@@ -13,6 +13,9 @@
 #include <algorithm>
 #include <sstream>
 
+using std::vector;
+using std::string;
+
 // Make the C socket stuff more pleasant
 #define IPV4 AF_INET
 #define TCP SOCK_STREAM
@@ -24,56 +27,52 @@ typedef struct sockaddr_in SocketAddress;
 const uint8_t maxPendingConnections = 5;
 const uint8_t readSize = 255;
 
-// prototypes
-bool message(Socket client, uint8_t* data, size_t dataLen);
-bool message(Socket client, std::string text);
-Socket setupAndListen(int port);
-Socket getClientSocket(Socket welcomingSocket);
-int outputErrorAndQuit(const char* errorMessage);
-std::string secondsToTime(double totalSecondsDouble);
-std::string extractMachineName(uint8_t* message, int messageLen);
-std::string extractUserName(uint8_t* message, int messageLen);
+// Prototypes
+bool   message (Socket client, uint8_t* data, size_t dataLen);
+bool   message (Socket client, string text);
+Socket setupAndListen (int port);
+Socket getClientSocket (Socket welcomingSocket);
+int    outputErrorAndQuit (const char* errorMessage);
+string secondsToTime (double totalSecondsDouble);
+string extractMachineName (uint8_t* message, int messageLen);
+string extractUserName (uint8_t* message, int messageLen);
 
+// Data Structures
 struct Machine;
-std::vector<Machine> snaggables;
+vector<Machine> snaggables;
 
 struct Machine
 {
-	static uint8_t id;
+	static uint8_t idCounter;
 	
-	Machine (std::string name)
+	Machine (string name)
 		: m_name(name)
-		, m_id(id++)
+		, m_id(idCounter++)
 	  , m_snagged(false)
-	  , m_status(true)
-		
 	{
 		snaggables.push_back(*this);
 	}
 	
-	std::string m_name;
+	string m_name;
 	uint8_t m_id;
 	bool m_snagged;
 	time_t m_snaggedTime;
-	bool m_status;
-	std::string m_snagger;
+	string m_snagger;
 	//ip
 	
   bool operator== (const Machine& rhs)
   {
-    return 
-      m_name == rhs.m_name &&
-      m_id == rhs.m_id;
+    return m_name == rhs.m_name &&
+             m_id == rhs.m_id;
   }
+	
+	bool operator<(Machine const & rhs) const
+	{
+	    return m_name < rhs.m_name;
+	}
 };
 
-uint8_t Machine::id = 0;
-
-// for sort
-bool operator<(Machine const & a, Machine const & b)
-{
-    return a.m_name < b.m_name;
-}
+uint8_t Machine::idCounter = 0;
 
 //----------------------------------------------------------------------------
 
@@ -86,6 +85,7 @@ int main (int argc, char *argv[])
     return 1;
   }
 	
+	// default machines
 	Machine dc1("DC1");
 	Machine dc2("DC2");
 	Machine dc4("DC4");
@@ -110,18 +110,18 @@ int main (int argc, char *argv[])
 		int readLen = read(client, buffer, readSize);
     if (readLen <= 0)
     {
-      std::cout << "Client failed to connect." << std::endl;
+      std::cerr << "Client failed to connect." << std::endl;
 	  }
 		
-		if (buffer[0] == 'a')
+		if (buffer[0] == 'a') // ADD
 		{
-			std::string requestedMachine = extractMachineName(buffer, readLen);
+			string requestedMachine = extractMachineName(buffer, readLen);
 			if (requestedMachine.size() > 22)
 			{
 				message(client, "Machine name too long");
 				continue;
 			}
-			else if (requestedMachine.find('#') != std::string::npos)
+			else if (requestedMachine.find('#') != string::npos)
 			{
 				message(client, "Machine name must not include '#' because my creator sucks");
 				continue;
@@ -143,11 +143,11 @@ int main (int argc, char *argv[])
 				message(client, "Machine successfully created");
 			}
 		}
-		else if (buffer[0] == 'd')
+		else if (buffer[0] == 'd') // DELETE
 		{
-			std::string requestedMachine = extractMachineName(buffer, readLen);
+			string requestedMachine = extractMachineName(buffer, readLen);
 			for (auto & c: requestedMachine) c = toupper(c);
-			std::string user = extractUserName(buffer, readLen);
+			string user = extractUserName(buffer, readLen);
 			bool machineExists = false;
 			for (Machine& machine : snaggables)
 			{
@@ -172,7 +172,7 @@ int main (int argc, char *argv[])
 				message(client, "You cannot delete a non-existent machine");
 			}
 		}
-		else if (buffer[0] == 'l')
+		else if (buffer[0] == 'l') // LIST
 		{
 			time_t now = time(NULL);
 			std::sort(snaggables.begin(), snaggables.end());
@@ -195,12 +195,12 @@ int main (int argc, char *argv[])
       }
 			message(client, oss.str());
 		}
-		else if (buffer[0] == 's')
+		else if (buffer[0] == 's') // SNAG
 		{
-			std::string requestedMachine = extractMachineName(buffer, readLen);
+			string requestedMachine = extractMachineName(buffer, readLen);
 			for (auto & c: requestedMachine) c = toupper(c);
 			//int requestedMachineAsInt = atoi(requestedMachine.c_str());
-			std::string user = extractUserName(buffer, readLen);
+			string user = extractUserName(buffer, readLen);
 			bool machineExists = false;
 			for (Machine& machine : snaggables)
 			{
@@ -242,11 +242,11 @@ int main (int argc, char *argv[])
 				message(client, reply.str());
 			}
 		}
-		else if (buffer [0] == 'u')
+		else if (buffer[0] == 'u') // UNSNAG
 		{
-			std::string requestedMachine = extractMachineName(buffer, readLen);
+			string requestedMachine = extractMachineName(buffer, readLen);
 			for (auto & c: requestedMachine) c = toupper(c);
-			std::string user = extractUserName(buffer, readLen);
+			string user = extractUserName(buffer, readLen);
 			bool machineExists = false;
 			for (Machine& machine : snaggables)
 			{
@@ -286,6 +286,8 @@ int main (int argc, char *argv[])
 	
 }
 
+//----------------------------------------------------------------------------
+
 bool message(Socket client, uint8_t* data, size_t dataLen)
 {
   uint32_t writeLen = write(client, data, dataLen);
@@ -297,7 +299,7 @@ bool message(Socket client, uint8_t* data, size_t dataLen)
   return true;
 }
 
-bool message(Socket client, std::string text)
+bool message(Socket client, string text)
 {
   uint32_t writeLen = write(client, &text[0], text.size());
   
@@ -350,7 +352,7 @@ int outputErrorAndQuit(const char* errorMessage)
   return 1;
 }
 
-std::string secondsToTime(double totalSecondsDouble)
+string secondsToTime(double totalSecondsDouble)
 {
 	std::ostringstream oss;
 	uint64_t totalSeconds = totalSecondsDouble;
@@ -380,9 +382,9 @@ std::string secondsToTime(double totalSecondsDouble)
 }
 
 // TODO: make these two functions not suck -- use regex? 
-std::string extractMachineName(uint8_t* message, int messageLen)
+string extractMachineName(uint8_t* message, int messageLen)
 {
-	std::string machine;
+	string machine;
 	for (int i = 2; message[i] != '-' && i < messageLen; ++i)
 	{
 		machine += message[i];
@@ -390,9 +392,9 @@ std::string extractMachineName(uint8_t* message, int messageLen)
 	return machine;
 }
 
-std::string extractUserName(uint8_t* message, int messageLen)
+string extractUserName(uint8_t* message, int messageLen)
 {
-	std::string user;
+	string user;
 	// skip the machine name
 	int i = 2; 
 	for (; message[i] != '-' && i < messageLen; ++i){}
