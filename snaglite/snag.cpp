@@ -10,6 +10,8 @@
 #include <iostream>
 #include <sstream>
 
+typedef uint8_t u8;
+
 // Make the C socket stuff more pleasant
 #define IPV4 AF_INET
 #define TCP SOCK_STREAM
@@ -21,34 +23,163 @@ typedef struct hostent Host;
 int connectToServer();
 void parseSnagList(char* buffer, size_t len);
 
+
+void helpCommand()
+{
+	std::cout << std::endl;
+	std::cout << "Snag is a lightweight client to book servers.\n\nUses" << std::endl;
+	std::cout << "-------------" << std::endl;
+	std::cout << "snag                 :  list the snaggables" << std::endl;
+	std::cout << "snag <snaggable>     :  attempt to snag snaggable" << std::endl;
+	std::cout << "snag -u <snaggable>  :  attempt to unsnag snaggable" << std::endl;
+	std::cout << "snag -a <snaggable>  :  attempt to add snaggable" << std::endl;
+	std::cout << "snag -d <snaggable>  :  attempt to delete snaggable" << std::endl;
+	std::cout << std::endl;
+}
+
+void listCommand(Socket clientSocket)
+{
+	write(clientSocket, "l-", 2);
+	std::cout << std::endl;
+	std::cout << "    MACHINE NAME          SNAGGER          SNAGGED FOR" << std::endl;
+	std::cout << "----------------------------------------------------------" << std::endl;
+	
+	// get server reply
+	char buffer[601];
+	memset(buffer, 0, 601);
+	int readLen = read(clientSocket, buffer, 400);
+	if (readLen < 0)
+	{
+	  std::cerr << "ERROR reading from socket" << std::endl;
+	  return;
+	}
+	parseSnagList(buffer, readLen);
+}
+
+// TODO: THESE FUNCTIONS ARE BASICALLY THE SAME
+
+void snagCommand(Socket clientSocket, std::string& target, std::string& clientName)
+{
+	std::ostringstream oss;
+	oss << "s-" << target << "-" << clientName << "-";
+	std::string message = oss.str();
+	write(clientSocket, message.c_str(), message.size());
+}
+
+void unsnagCommand(Socket clientSocket, std::string& target, std::string& clientName)
+{
+	std::ostringstream oss;
+	oss << "u-" << target << "-" << clientName << "-";
+	std::string message = oss.str();
+	write(clientSocket, message.c_str(), message.size());
+}
+
+void addCommand(Socket clientSocket, std::string& target, std::string& clientName)
+{
+	std::ostringstream oss;
+	oss << "a-" << target << "-" << clientName << "-";
+	std::string message = oss.str();
+	write(clientSocket, message.c_str(), message.size());
+}
+
+void delCommand(Socket clientSocket, std::string& target, std::string& clientName)
+{
+	std::ostringstream oss;
+	oss << "d-" << target << "-" << clientName << "-";
+	std::string message = oss.str();
+	write(clientSocket, message.c_str(), message.size());
+}
+
+enum commands
+{
+	  snag   = 0
+	, unsnag = 1
+	, list   = 2
+	, add    = 3
+	, del    = 4
+	, help   = 5
+};
+
 int main(int argc, char* argv[])
 {
-  if (argc < 2) 
-  {
-    std::cout << "USAGE: " << argv[0] << " [-l/-u/-a/-d/-h][snaggable]" << std::endl;
-		std::cout << "Type " << argv[0] << " -h for help" << std::endl;
-    return 1;
-  }
+	// verify input
+	u8 command = 0;
+	std::string target = "";
 	
-	if ( argv[1][0] == '-' && 
-		   argv[1][1] != 'l' &&
-			 argv[1][1] != 'u' && 
-			 argv[1][1] != 'a' &&
-			 argv[1][1] != 'd' &&
-			 argv[1][1] != 'h')
+	if (argc == 1)
 	{
-		std::cout << "ERROR: command not recognised" << std::endl;
-		return 1;
+		command = list;
+	}
+	else if (argc == 2)
+	{
+		if (0 == strcmp(argv[1], "-l"))
+		{
+			command = list;
+		}
+		else if (0 == strcmp(argv[1], "-h"))
+		{
+			command = help;
+		}
+		else if (0 == strcmp(argv[1], "-u") ||
+						 0 == strcmp(argv[1], "-a") || 
+						 0 == strcmp(argv[1], "-d"))
+		{
+			std::cerr << "ERROR: you didn't provide a server. ";
+			std::cerr << "Type snag -h for help" << std::endl;
+			return 1;
+		}
+		else if (argv[1][0] == '-')
+		{
+			std::cerr << "ERROR: unknown command '" << argv[1] << "', ";
+			std::cerr << "Type snag -h for help" << std::endl;
+			return 1;
+		}
+		else
+		{
+			command = snag;
+			target = argv[1];
+		}
+	}
+	else if (argc > 2)
+	{
+		if (0 == strcmp(argv[1], "-l"))
+		{
+			command = list;
+			std::cerr << "TIP: list command takes no arguments." << std::endl;
+		}
+		else if (0 == strcmp(argv[1], "-h"))
+		{
+			command = help;
+			std::cerr << "TIP: help command takes no arguments." << std::endl;
+		}
+		else if (0 == strcmp(argv[1], "-u")) 
+		{
+			command = unsnag;
+			target = argv[2];
+		}
+		else if (0 == strcmp(argv[1], "-a"))
+		{
+			command = add;
+			target = argv[2];
+		}
+		else if (0 == strcmp(argv[1], "-d"))
+		{
+			command = del;
+			target = argv[2];
+		}
+		else
+		{
+			std::cerr << "ERROR: invalid command '" << argv[1] << "', ";
+			std::cerr << "Type snag -h for help" << std::endl;
+			return 1;
+		}
 	}
 	
-	if ( strcmp(argv[1], "-h") == 0)
+	// perform commands
+	
+	if (command == help)
 	{
-		std::cout << "Examples:" << std::endl;
-		std::cout << argv[0] << " -l            <-- list the servers" << std::endl;
-		std::cout << argv[0] << " myserver      <-- attempt to snag myserver" << std::endl;
-		std::cout << argv[0] << " -u myserver   <-- attempt to unsnag myserver" << std::endl;
-		std::cout << argv[0] << " -a myserver   <-- attempt to add myserver" << std::endl;
-		std::cout << argv[0] << " -d myserver   <-- attempt to delete myserver" << std::endl;
+		helpCommand();
 		return 1;
 	}
 
@@ -57,76 +188,28 @@ int main(int argc, char* argv[])
 	{
 		return 1;
 	}
-		
-	char clientName[20];
-	getlogin_r(clientName, 20);
-
-	if ( strcmp(argv[1], "-l") == 0 )
+	char clientNameBuffer[20];
+	getlogin_r(clientNameBuffer, 20);
+	std::string clientName(clientNameBuffer);
+	
+	switch(command)
 	{
-		write(clientSocket, "l-", 2);
-		std::cout << std::endl;
-		std::cout << "    MACHINE NAME          SNAGGER          SNAGGED FOR" << std::endl;
-		std::cout << "----------------------------------------------------------" << std::endl;
-		
-		// get server reply
-		char buffer[601];
-		memset(buffer, 0, 601);
-		int readLen = read(clientSocket, buffer, 400);
-		if (readLen < 0)
-		{
-		  std::cerr << "ERROR reading from socket" << std::endl;
-		  return 1;
-		}
-		parseSnagList(buffer, readLen);
-		return 0; 
-	}	
-	else if ( strcmp(argv[1], "-a") == 0)
-	{
-		if (argc < 3)
-		{
-			std::cout << "ERROR: you didn't specify a server to add!" << std::endl;
-			return 1;
-		}
-		if (strlen(argv[2]) > 22)
-		{
-			std::cout << "ERROR: name too long" << std::endl;
-			return 1;
-		}
-		std::ostringstream oss;
-		oss << "a-" << argv[2] << "-" << clientName << "-";
-		std::string message = oss.str();
-		write(clientSocket, message.c_str(), message.size());
-	}
-	else if ( strcmp(argv[1], "-d") == 0)
-	{
-		if (argc < 3)
-		{
-			std::cout << "ERROR: you didn't specify a server to delete!" << std::endl;
-			return 1;
-		}
-		std::ostringstream oss;
-		oss << "d-" << argv[2] << "-" << clientName << "-";
-		std::string message = oss.str();
-		write(clientSocket, message.c_str(), message.size());
-	}
-	else if ( strcmp(argv[1], "-u") == 0 )
-	{
-		if (argc < 3)
-		{
-			std::cout << "ERROR: you didn't specify a server to unsnag!" << std::endl;
-			return 1;
-		}
-		std::ostringstream oss;
-		oss << "u-" << argv[2] << "-" << clientName << "-";
-		std::string message = oss.str();
-		write(clientSocket, message.c_str(), message.size());
-	}
-	else
-	{
-		std::ostringstream oss;
-		oss << "s-" << argv[1] << "-" << clientName << "-";
-		std::string message = oss.str();
-		write(clientSocket, message.c_str(), message.size());
+		case list:
+			listCommand(clientSocket);
+			return 0;
+			break;
+		case snag:
+			snagCommand(clientSocket, target, clientName);
+			break;
+		case unsnag:
+			unsnagCommand(clientSocket, target, clientName);
+			break;
+		case add:
+			addCommand(clientSocket, target, clientName);
+			break;
+		case del:
+		  delCommand(clientSocket, target, clientName);
+			break;
 	}
 	
 	// get server reply
@@ -141,8 +224,8 @@ int main(int argc, char* argv[])
 	}
 	std::cout << buffer << std::endl;
 	std::cout << std::endl;
-	
-}
+
+} // end main
 
 
 Socket connectToServer()
@@ -155,7 +238,7 @@ Socket connectToServer()
     return -1;
   }
   
-  Host* server = gethostbyname("Matthews-Air.home");
+  Host* server = gethostbyname("localhost");
   if (server == NULL)
   {
     std::cerr << "ERROR, no such host " << std::endl;
