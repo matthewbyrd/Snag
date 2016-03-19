@@ -22,73 +22,12 @@ typedef struct hostent Host;
 
 int connectToServer();
 void parseSnagList(char* buffer, size_t len);
-
-
-void helpCommand()
-{
-	std::cout << std::endl;
-	std::cout << "Snag is a lightweight client to book servers.\n\nUses" << std::endl;
-	std::cout << "-------------" << std::endl;
-	std::cout << "snag                 :  list the snaggables" << std::endl;
-	std::cout << "snag <snaggable>     :  attempt to snag snaggable" << std::endl;
-	std::cout << "snag -u <snaggable>  :  attempt to unsnag snaggable" << std::endl;
-	std::cout << "snag -a <snaggable>  :  attempt to add snaggable" << std::endl;
-	std::cout << "snag -d <snaggable>  :  attempt to delete snaggable" << std::endl;
-	std::cout << std::endl;
-}
-
-void listCommand(Socket clientSocket)
-{
-	write(clientSocket, "l-", 2);
-	std::cout << std::endl;
-	std::cout << "    MACHINE NAME          SNAGGER          SNAGGED FOR" << std::endl;
-	std::cout << "----------------------------------------------------------" << std::endl;
-	
-	// get server reply
-	char buffer[601];
-	memset(buffer, 0, 601);
-	int readLen = read(clientSocket, buffer, 400);
-	if (readLen < 0)
-	{
-	  std::cerr << "ERROR reading from socket" << std::endl;
-	  return;
-	}
-	parseSnagList(buffer, readLen);
-}
-
-// TODO: THESE FUNCTIONS ARE BASICALLY THE SAME
-
-void snagCommand(Socket clientSocket, std::string& target, std::string& clientName)
-{
-	std::ostringstream oss;
-	oss << "s-" << target << "-" << clientName << "-";
-	std::string message = oss.str();
-	write(clientSocket, message.c_str(), message.size());
-}
-
-void unsnagCommand(Socket clientSocket, std::string& target, std::string& clientName)
-{
-	std::ostringstream oss;
-	oss << "u-" << target << "-" << clientName << "-";
-	std::string message = oss.str();
-	write(clientSocket, message.c_str(), message.size());
-}
-
-void addCommand(Socket clientSocket, std::string& target, std::string& clientName)
-{
-	std::ostringstream oss;
-	oss << "a-" << target << "-" << clientName << "-";
-	std::string message = oss.str();
-	write(clientSocket, message.c_str(), message.size());
-}
-
-void delCommand(Socket clientSocket, std::string& target, std::string& clientName)
-{
-	std::ostringstream oss;
-	oss << "d-" << target << "-" << clientName << "-";
-	std::string message = oss.str();
-	write(clientSocket, message.c_str(), message.size());
-}
+void helpCommand();
+void listCommand(Socket clientSocket);
+void snagCommand(Socket clientSocket, std::string& target, std::string& clientName);
+void unsnagCommand(Socket clientSocket, std::string& target, std::string& clientName);
+void addCommand(Socket clientSocket, std::string& target, std::string& clientName);
+void delCommand(Socket clientSocket, std::string& target, std::string& clientName);
 
 enum commands
 {
@@ -227,6 +166,72 @@ int main(int argc, char* argv[])
 
 } // end main
 
+
+void helpCommand()
+{
+	std::cout << std::endl;
+	std::cout << "Snag is a lightweight client to book servers.\n\nUses" << std::endl;
+	std::cout << "-------------" << std::endl;
+	std::cout << "snag                 :  list the snaggables" << std::endl;
+	std::cout << "snag <snaggable>     :  attempt to snag snaggable" << std::endl;
+	std::cout << "snag -u <snaggable>  :  attempt to unsnag snaggable" << std::endl;
+	std::cout << "snag -a <snaggable>  :  attempt to add snaggable" << std::endl;
+	std::cout << "snag -d <snaggable>  :  attempt to delete snaggable" << std::endl;
+	std::cout << std::endl;
+}
+
+void listCommand(Socket clientSocket)
+{
+	write(clientSocket, "l-", 2);
+	std::cout << std::endl;
+	std::cout << "    MACHINE NAME          SNAGGER          SNAGGED FOR" << std::endl;
+	std::cout << "----------------------------------------------------------" << std::endl;
+	
+	// get server reply
+	char buffer[601];
+	memset(buffer, 0, 601);
+	int readLen = read(clientSocket, buffer, 400);
+	if (readLen < 0)
+	{
+	  std::cerr << "ERROR reading from socket" << std::endl;
+	  return;
+	}
+	parseSnagList(buffer, readLen);
+}
+
+// TODO: THESE FUNCTIONS ARE BASICALLY THE SAME
+
+void snagCommand(Socket clientSocket, std::string& target, std::string& clientName)
+{
+	std::ostringstream oss;
+	oss << "s-" << target << "-" << clientName << "-";
+	std::string message = oss.str();
+	write(clientSocket, message.c_str(), message.size());
+}
+
+void unsnagCommand(Socket clientSocket, std::string& target, std::string& clientName)
+{
+	std::ostringstream oss;
+	oss << "u-" << target << "-" << clientName << "-";
+	std::string message = oss.str();
+	write(clientSocket, message.c_str(), message.size());
+}
+
+void addCommand(Socket clientSocket, std::string& target, std::string& clientName)
+{
+	std::ostringstream oss;
+	oss << "a-" << target << "-" << clientName << "-";
+	std::string message = oss.str();
+	write(clientSocket, message.c_str(), message.size());
+}
+
+void delCommand(Socket clientSocket, std::string& target, std::string& clientName)
+{
+	std::ostringstream oss;
+	oss << "d-" << target << "-" << clientName << "-";
+	std::string message = oss.str();
+	write(clientSocket, message.c_str(), message.size());
+}
 
 Socket connectToServer()
 {
