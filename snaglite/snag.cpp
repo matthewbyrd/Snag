@@ -9,6 +9,7 @@
 
 #include <iostream>
 #include <sstream>
+#include <string>
 
 typedef uint8_t u8;
 
@@ -18,16 +19,18 @@ typedef uint8_t u8;
 const uint8_t defaultProtocol = 0;
 typedef int Socket;
 typedef struct sockaddr_in SocketAddress;
-typedef struct hostent Host;  
+typedef struct hostent Host;
 
+namespace {
 int connectToServer();
 void parseSnagList(char* buffer, size_t len);
 void helpCommand();
 void listCommand(Socket clientSocket);
-void snagCommand(Socket clientSocket, std::string& target, std::string& clientName);
-void unsnagCommand(Socket clientSocket, std::string& target, std::string& clientName);
-void addCommand(Socket clientSocket, std::string& target, std::string& clientName);
-void delCommand(Socket clientSocket, std::string& target, std::string& clientName);
+void doCommand(std::string commandCode,
+						 Socket clientSocket,
+						 std::string& target,
+						 std::string& clientName);
+} // namespace anon
 
 enum commands
 {
@@ -45,7 +48,19 @@ int main(int argc, char* argv[])
 	u8 command = 0;
 	std::string target = "";
 	
-	if (argc == 1)
+	//parse commands
+	if (0 == strcmp(argv[0], "unsnag"))
+	{
+		if (argc < 2)
+		{
+			std::cerr << "ERROR: you didn't provide a server. ";
+			std::cerr << "Type snag -h for help" << std::endl;
+			return 1;
+		}
+		command = unsnag;
+		target = argv[1];
+	}
+	else if (argc == 1)
 	{
 		command = list;
 	}
@@ -115,11 +130,11 @@ int main(int argc, char* argv[])
 	}
 	
 	// perform commands
-	
+
 	if (command == help)
 	{
 		helpCommand();
-		return 1;
+		return 0;
 	}
 
 	Socket clientSocket = connectToServer();
@@ -138,16 +153,16 @@ int main(int argc, char* argv[])
 			return 0;
 			break;
 		case snag:
-			snagCommand(clientSocket, target, clientName);
+			doCommand("s", clientSocket, target, clientName);
 			break;
 		case unsnag:
-			unsnagCommand(clientSocket, target, clientName);
+			doCommand("u", clientSocket, target, clientName);
 			break;
 		case add:
-			addCommand(clientSocket, target, clientName);
+			doCommand("a", clientSocket, target, clientName);
 			break;
 		case del:
-		  delCommand(clientSocket, target, clientName);
+			doCommand("d", clientSocket, target, clientName);
 			break;
 	}
 	
@@ -167,6 +182,8 @@ int main(int argc, char* argv[])
 } // end main
 
 
+namespace { //------------------------------------------------------------------
+
 void helpCommand()
 {
 	std::cout << std::endl;
@@ -174,6 +191,7 @@ void helpCommand()
 	std::cout << "-------------" << std::endl;
 	std::cout << "snag                 :  list the snaggables" << std::endl;
 	std::cout << "snag <snaggable>     :  attempt to snag snaggable" << std::endl;
+	std::cout << "unsnag <snaggable>   :  attempt to unsnag snaggable" << std::endl;
 	std::cout << "snag -u <snaggable>  :  attempt to unsnag snaggable" << std::endl;
 	std::cout << "snag -a <snaggable>  :  attempt to add snaggable" << std::endl;
 	std::cout << "snag -d <snaggable>  :  attempt to delete snaggable" << std::endl;
@@ -188,10 +206,17 @@ void listCommand(Socket clientSocket)
 	std::cout << "----------------------------------------------------------" << std::endl;
 	
 	// get server reply
-	char buffer[601];
-	memset(buffer, 0, 601);
-	int readLen = read(clientSocket, buffer, 400);
+	uint16_t sizeToRead;
+	int readLen = read(clientSocket, &sizeToRead, 2);
 	if (readLen < 0)
+	{
+	  std::cerr << "ERROR reading from socket" << std::endl;
+	  return;
+	}
+	char buffer[sizeToRead];
+	memset(buffer, 0, sizeToRead);
+	readLen = read(clientSocket, buffer, sizeToRead);
+	if (readLen < sizeToRead)
 	{
 	  std::cerr << "ERROR reading from socket" << std::endl;
 	  return;
@@ -199,36 +224,13 @@ void listCommand(Socket clientSocket)
 	parseSnagList(buffer, readLen);
 }
 
-// TODO: THESE FUNCTIONS ARE BASICALLY THE SAME
-
-void snagCommand(Socket clientSocket, std::string& target, std::string& clientName)
+void doCommand(std::string commandCode,
+						   Socket clientSocket,
+						   std::string& target,
+						   std::string& clientName)
 {
 	std::ostringstream oss;
-	oss << "s-" << target << "-" << clientName << "-";
-	std::string message = oss.str();
-	write(clientSocket, message.c_str(), message.size());
-}
-
-void unsnagCommand(Socket clientSocket, std::string& target, std::string& clientName)
-{
-	std::ostringstream oss;
-	oss << "u-" << target << "-" << clientName << "-";
-	std::string message = oss.str();
-	write(clientSocket, message.c_str(), message.size());
-}
-
-void addCommand(Socket clientSocket, std::string& target, std::string& clientName)
-{
-	std::ostringstream oss;
-	oss << "a-" << target << "-" << clientName << "-";
-	std::string message = oss.str();
-	write(clientSocket, message.c_str(), message.size());
-}
-
-void delCommand(Socket clientSocket, std::string& target, std::string& clientName)
-{
-	std::ostringstream oss;
-	oss << "d-" << target << "-" << clientName << "-";
+	oss << commandCode << "-" << target << "-" << clientName << "-";
 	std::string message = oss.str();
 	write(clientSocket, message.c_str(), message.size());
 }
@@ -302,7 +304,12 @@ void parseSnagList(char* buffer, size_t len)
 			++i;
 			while(buffer[i] != '#')
 			{
-				oss << buffer[i++];
+				oss << buffer[i];
+				if (buffer[i] == 'd' || buffer[i] == 'h' || buffer[i] == 'm')
+				{
+					oss << " ";
+				}
+				++i;
 			}
 			++i;
 		}
@@ -315,3 +322,4 @@ void parseSnagList(char* buffer, size_t len)
 	std::string output = oss.str();
 	std::cout << output << std::endl;
 }
+} // namespace anon ------------------------------------------------------------

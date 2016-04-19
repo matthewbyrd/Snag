@@ -28,6 +28,7 @@ const uint8_t maxPendingConnections = 5;
 const uint8_t readSize = 255;
 
 // Prototypes
+namespace { //------------------------------------------------------------------
 bool   message (Socket client, uint8_t* data, size_t dataLen);
 bool   message (Socket client, string text);
 Socket setupAndListen (int port);
@@ -36,6 +37,7 @@ int    outputErrorAndQuit (const char* errorMessage);
 string secondsToTime (double totalSecondsDouble);
 string extractMachineName (uint8_t* message, int messageLen);
 string extractUserName (uint8_t* message, int messageLen);
+} // namespace anon ------------------------------------------------------------
 
 // Data Structures
 struct Machine;
@@ -193,7 +195,17 @@ int main (int argc, char *argv[])
 					oss << "#";
 			  }
       }
-			message(client, oss.str());
+			std::string messageToSend = oss.str();
+			uint16_t messageSize = messageToSend.size();
+			if (messageSize > 0xFFFF)
+			{
+				std::cerr << "Fatal error: too many machines registered" << std::endl;
+			}
+			uint8_t sizeToSend[2];
+			sizeToSend[0] = messageSize & 0xFF;
+			sizeToSend[1] = messageSize >> 8;
+			write(client, &sizeToSend[0], 2);
+			message(client, messageToSend);
 		}
 		else if (buffer[0] == 's') // SNAG
 		{
@@ -286,7 +298,7 @@ int main (int argc, char *argv[])
 	
 }
 
-//----------------------------------------------------------------------------
+namespace { //------------------------------------------------------------------
 
 bool message(Socket client, uint8_t* data, size_t dataLen)
 {
@@ -363,20 +375,20 @@ string secondsToTime(double totalSecondsDouble)
 	if (days)
 	{
 		oss << days;
-		oss << "d ";
+		oss << "d";
 	}
 	if (hours)
 	{
 	  oss << hours;
-	  oss << "h ";
+	  oss << "h";
   }
 	if (minutes)
 	{
 	  oss << minutes;
-	  oss << "m ";
+	  oss << "m";
 	}
 	oss << seconds;
-	oss << "s ";
+	oss << "s";
 
 	return oss.str();
 }
@@ -407,3 +419,4 @@ string extractUserName(uint8_t* message, int messageLen)
 	}
 	return user;
 }
+} // namespace anon ------------------------------------------------------------
