@@ -240,7 +240,7 @@ int main (int argc, char *argv[])
 					else
 					{
 						std::ostringstream reply;
-						reply << "Machine " << machine.m_name << " is already snagged by ." << machine.m_snagger;
+						reply << "Machine " << machine.m_name << " is already snagged by " << machine.m_snagger << ".";
 						message(client, reply.str());
 						machineExists = true;
 						break;
